@@ -2,6 +2,10 @@
 
 `liver_segmentation` segments images of liver biopsies preserved in formalin to identify areas of fat and calculate the fat estimate.
 
+## Install conda
+
+Before you run the script, you will need to have `conda` installed. The instructions to install `conda` for your operating system are at this website: [https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html#regular-installation](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html#regular-installation).
+
 ## Usage
 
 To run the script, open the command line. Navigate to the directory with both the bash script and Python script. Then, run the following line in the command line.
