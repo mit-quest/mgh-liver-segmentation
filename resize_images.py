@@ -1,6 +1,9 @@
 import numpy as np
 from PIL import Image
 import os
+from typing import List, Dict, Any
+import sys
+import argparse
 
 
 def resize_images(images_directory, new_width, new_height, output_directory):
@@ -41,7 +44,7 @@ def parse_args(args: List[str]) -> Dict[str, Any]:
     parser.add_argument(
         "--new_height",
         type=int,
-        default=640
+        default=640,
         help="Desired height for resized images",
     )
     args = vars(parser.parse_args())
@@ -50,7 +53,7 @@ def parse_args(args: List[str]) -> Dict[str, Any]:
 
 def main(**args: Dict[str, Any]) -> None:
     images_directory, output_directory, new_width, new_height = args.values()
-    resize_images(images_dir, new_width, new_height, output_directory)
+    resize_images(images_directory, new_width, new_height, output_directory)
 
 
 if __name__ == "__main__":
