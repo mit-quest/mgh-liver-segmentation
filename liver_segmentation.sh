@@ -17,8 +17,8 @@ else
 fi
 
 if $useConfig; then
-	images='../../../Desktop/r_frozen'
-	output='../../../Desktop/r_frozen_output'
+	images='frozen_samples'
+	output='frozen_samples/output'
 	estimates='../../fakepath'
 	mag='20x'
 	pres='frozen'
