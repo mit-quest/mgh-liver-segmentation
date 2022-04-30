@@ -18,7 +18,7 @@ fi
 
 if $useConfig; then
 	images='frozen_samples'
-	output='frozen_samples/output'
+	output='output'
 	estimates='../../fakepath'
 	mag='20x'
 	pres='frozen'
@@ -40,8 +40,5 @@ else
 	read pres
 fi
 
-script="_liver_segmentation.py"
-
-
-# Run formalin segmentation Python script
-python3 "$pres$script" --images_directory $images --output_directory $output --pathologist_estimates $estimates --magnification $mag
+# Run liver segmentation Python script
+python3 "runner.py" --images_directory $images --output_directory $output --pathologist_estimates $estimates --magnification $mag --preservation $pres
