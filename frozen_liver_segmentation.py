@@ -564,8 +564,8 @@ def mean_fat_percent(image_names, original_folder, new_mask_folder):
 
 def run_watershed(binary_image_path, watershed_image_path, ij):
     macro = """
-    #@ String binary_image_path
-    #@ String watershed_image_path
+    //@ String binary_image_path
+    //@ String watershed_image_path
 
     open(binary_image_path);
     run("8-bit");
@@ -574,7 +574,7 @@ def run_watershed(binary_image_path, watershed_image_path, ij):
     """
     args = {
         'binary_image_path': binary_image_path,
-        'watershed_image_path': watershed_image_path,
+        'watershed_image_path': watershed_image_path + '-w2.tiff',
     };
     result = ij.py.run_macro(macro, args);
     result.getOutput('watershed_image_path')
@@ -596,10 +596,12 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
     Returns:
     None
     """
+    print("Starting " + image_name)
     image_path = os.path.join(images_directory, liver_name, image_name)
     white_areas_in_liver_tissue = find_white_areas_in_liver_tissue(image_path)
 
     # Remove noise - TODO: Try without removing noise
+    print("Creating binary...")
     opened_image_bool = remove_small_holes(white_areas_in_liver_tissue, area_threshold=2) # Change black area < 5 pixels to white
     opened_image_bool = remove_small_objects(opened_image_bool, min_size=10) # Change white area < 10 pixels to black
     opened_image = opened_image_bool.astype(np.uint8)  # Convert to an unsigned byte
@@ -613,9 +615,11 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
     # TODO: Fix remove_background to use code from find_white_areas_in_liver_tissue
     binary_without_obvious_non_fat = remove_background(erode_image_bool)
     save_path = os.path.join(output_directory, liver_name, image_name)
+    cv2.imwrite(save_path + '-binary.tiff', binary_without_obvious_non_fat)
     cv2.imwrite(save_path, binary_without_obvious_non_fat)
 
     # Run watershed and save image
+    print("Running watershed #1...")
     run_watershed(save_path, save_path, ij)
 
     # After applying watershed
@@ -624,6 +628,7 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
     watershed_bool = watershed_gray > 0
 
     # Create mask
+    print("Generating mask #1...")
     np_graph = watershed_bool # Use eroded watershed binary
     row, col = np_graph.shape
     graph = np_graph.tolist()
@@ -637,6 +642,8 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
     new_mask_dilate *= 255
 
     # New: Extra watershed and circularity step
+    print("Running watershed #2...")
+    cv2.imwrite(save_path + '-watershed.tiff', new_mask_dilate)
     cv2.imwrite(save_path, new_mask_dilate)
     run_watershed(save_path, save_path, ij)
     watershed_binary_new = cv2.imread(save_path)
@@ -644,6 +651,7 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
     watershed_bool_new = watershed_gray_new > 0
 
     # Create mask
+    print("Generating mask #2...")
     np_graph_new = watershed_bool_new # Use eroded watershed binary
     row_new, col_new = np_graph_new.shape
     graph_new = np_graph_new.tolist()
@@ -658,9 +666,11 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
 
     # Save mask
     new_mask_to_save = new_mask_rgb.astype(np.uint8) * 255
+    cv2.imwrite(save_path + '-new_mask.tiff', new_mask_to_save)
     cv2.imwrite(save_path, new_mask_to_save)
 
     # Estimate fat
+    print("Estimating steatosis...")
     original_image_path = os.path.join(images_directory, liver_name)
     mask_image_path = os.path.join(output_directory, liver_name)
     mean_total_fat, mean_macro_fat = mean_fat_percent([image_name], original_image_path, mask_image_path)
@@ -687,6 +697,7 @@ def frozen_liver_segmentation(images_directory, output_directory, liver_name, im
     new_img = Image.blend(background, combined_non_liver_image, 0.5) # Add large white area image on top of original image
     new_img = Image.blend(new_img, overlay, 0.5) # Add segmented fat mask on top of current image
     new_img.save(overlay_path, "tiff")
+    print(image_name + " complete!")
 
 
 # TODO: Center title and pathologist/algorithm estimates
@@ -778,24 +789,24 @@ def parse_args(args: List[str]) -> Dict[str, Any]:
         help="Path to output directory to save segmentation and fat estimate",
     )
     parser.add_argument(
-        "--pathologist_estimates",
-        type=str,
-        required=True,
-        help="Path to CSV with pathologist estimates",
-    )
-    parser.add_argument(
         "--magnification",
         type=str,
         required=True,
         help="Magnification of images to use, e.g. 20x",
+    )
+    parser.add_argument(
+        "--pathologist_estimates",
+        type=str,
+        required=False,
+        help="Path to CSV with pathologist estimates",
     )
     args = vars(parser.parse_args())
     return args
 
 
 def main(**args: Dict[str, Any]) -> None:
-    images_directory, output_directory, pathologist_estimates, magnification = args.values()
-    ij = imagej.init()
+    images_directory, output_directory, magnification, pathologist_estimates = args.values()
+    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy')
     liver_folders = os.listdir(images_directory)
 
     # Create output folder if it does not already exist
@@ -803,6 +814,7 @@ def main(**args: Dict[str, Any]) -> None:
         os.mkdir(output_directory)
 
     for liver_name in liver_folders:
+        print("Processing " + liver_name)
         # Create liver output folder if it does not already exist
         liver_output_folder = os.path.join(output_directory, liver_name)
         if not os.path.exists(liver_output_folder):
@@ -828,8 +840,8 @@ def main(**args: Dict[str, Any]) -> None:
         # Create slides for each liver
         powerpoint_save_path = os.path.join(liver_output_folder,
                                             f'{liver_name}_slides.pptx')
-        make_powerpoint(images_directory, output_directory,
-                        pathologist_estimates, liver_name, powerpoint_save_path)
+        # make_powerpoint(images_directory, output_directory,
+        #                 pathologist_estimates, liver_name, powerpoint_save_path)
 
 
 if __name__ == "__main__":
