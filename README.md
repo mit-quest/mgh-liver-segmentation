@@ -2,7 +2,7 @@
 
 Automated segmentation and estimation of liver steatosis in frozen or formalin-preserved sections using smartphone-based images.
 
-
+![Example segmentations](example_segmentations.png)
 
 ## Install conda
 
