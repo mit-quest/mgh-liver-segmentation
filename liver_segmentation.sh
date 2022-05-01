@@ -19,7 +19,7 @@ fi
 if $useConfig; then
 	images='frozen_samples'
 	output='output'
-	estimates='../../fakepath'
+	estimates=''
 	mag='20x'
 	pres='frozen'
 else
@@ -39,6 +39,11 @@ else
 
 	echo -e "Enter the biopsy preservation type ('frozen' or 'formalin'): "
 	read pres
+fi
+
+if [ -z "$estimates" ]
+then
+	estimates='False'
 fi
 
 # Run Python script

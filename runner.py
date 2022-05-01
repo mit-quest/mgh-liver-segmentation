@@ -7,7 +7,6 @@ sys.setrecursionlimit(10000000)
 import imagej
 
 import helpers
-
 from segment_liver import segment_liver
 from estimate_steatosis import estimate_steatosis
 
@@ -52,11 +51,12 @@ def main(**args: Dict[str, Any]) -> None:
                                           liver_name, image_name, is_frozen)
             print(image_name + " complete!")
 
-        # # Create slides for each liver
-        # powerpoint_save_path = os.path.join(liver_output_folder,
-        #                                     f'{liver_name}_slides.pptx')
-        # helpers.make_powerpoint(images_directory, output_directory,
-        #                 pathologist_estimates, liver_name, powerpoint_save_path)
+        # Create slides for each liver
+        if pathologist_estimates:
+            powerpoint_save_path = os.path.join(liver_output_folder,
+                                                f'{liver_name}_slides.pptx')
+            helpers.make_powerpoint(images_directory, output_directory,
+                            pathologist_estimates, liver_name, powerpoint_save_path)
 
 
 if __name__ == "__main__":
