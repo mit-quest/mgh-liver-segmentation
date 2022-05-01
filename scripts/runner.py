@@ -1,4 +1,6 @@
+from datetime import timedelta
 from typing import List, Dict, Any
+import time
 
 import os
 import sys
@@ -22,6 +24,7 @@ def main(**args: Dict[str, Any]) -> None:
         os.mkdir(output_directory)
 
     for liver_name in liver_folders:
+
         print("\nProcessing " + liver_name)
         # Create liver output folder if it does not already exist
         liver_output_folder = os.path.join(output_directory, liver_name)
@@ -43,6 +46,7 @@ def main(**args: Dict[str, Any]) -> None:
                 os.remove(csv_file_path)
 
             for image_name in liver_images:
+                start_time = time.monotonic()                
                 print(image_name)
                 print("Beginning segmentation...")
                 segment_liver(images_directory, output_directory,
@@ -51,6 +55,7 @@ def main(**args: Dict[str, Any]) -> None:
                 estimate_steatosis(images_directory, output_directory,
                                               liver_name, image_name, is_frozen)
                 print(image_name + " complete!")
+                print("Image processed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
             # Create slides for each liver
             if pathologist_estimates:
