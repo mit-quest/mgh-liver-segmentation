@@ -1,4 +1,5 @@
 from datetime import timedelta
+from multiprocessing import Pool
 from typing import List, Dict, Any
 import time
 
@@ -13,10 +14,25 @@ from segment_liver import segment_liver
 from estimate_steatosis import estimate_steatosis
 
 
+def _process_image(images_directory, output_directory, liver_name, image_name, is_frozen):
+    start_time = time.monotonic() 
+    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy') 
+
+    print("Beginning segmentation...")
+    segment_liver(images_directory, output_directory,
+                                  liver_name, image_name, is_frozen, ij)
+    print("Estimating steatosis...")
+    estimate_steatosis(images_directory, output_directory,
+                                  liver_name, image_name, is_frozen)
+
+    print(image_name + " complete!")
+    print("Image processed in " + str(timedelta(seconds=time.monotonic() - start_time)))
+
+
 def main(**args: Dict[str, Any]) -> None:
     images_directory, output_directory, magnification, preservation, pathologist_estimates = args.values()
     is_frozen = True if preservation == 'frozen' else False
-    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy')
+    # ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy')
     liver_folders = os.listdir(images_directory)
 
     # Create output folder if it does not already exist
@@ -45,17 +61,10 @@ def main(**args: Dict[str, Any]) -> None:
             if os.path.exists(csv_file_path):
                 os.remove(csv_file_path)
 
-            for image_name in liver_images:
-                start_time = time.monotonic()                
-                print(image_name)
-                print("Beginning segmentation...")
-                segment_liver(images_directory, output_directory,
-                                              liver_name, image_name, is_frozen, ij)
-                print("Estimating steatosis...")
-                estimate_steatosis(images_directory, output_directory,
-                                              liver_name, image_name, is_frozen)
-                print(image_name + " complete!")
-                print("Image processed in " + str(timedelta(seconds=time.monotonic() - start_time)))
+            pool = Pool(processes=4)
+            input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen] for image_name in liver_images]
+            pool.starmap(_process_image, input_list) 
+            pool.close()
 
             # Create slides for each liver
             if pathologist_estimates:
