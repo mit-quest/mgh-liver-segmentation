@@ -1,7 +1,9 @@
 import cv2
+from datetime import timedelta
 import numpy as np
 import math
 import argparse
+import time
 from typing import List, Dict, Any
 from statistics import median
 
@@ -104,9 +106,9 @@ def _remove_background(opened_image_bool, is_frozen):
     return binary_without_obvious_non_fat
 
 def segment_liver(images_directory, output_directory, liver_name, image_name, is_frozen, ij):
+    start_time = time.monotonic()
 
     image_path = os.path.join(images_directory, liver_name, image_name)
-
     erode_image_bool = common.prepare_image(image_path, is_frozen)
 
     # Find binary image without background, save binary
@@ -115,6 +117,7 @@ def segment_liver(images_directory, output_directory, liver_name, image_name, is
     save_path = os.path.join(output_directory, liver_name, image_name)
     cv2.imwrite(save_path + '-binary.tiff', binary_without_obvious_non_fat)
     cv2.imwrite(save_path, binary_without_obvious_non_fat)
+    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # run watershed and create mask
     print("Running watershed...")
@@ -126,6 +129,7 @@ def segment_liver(images_directory, output_directory, liver_name, image_name, is
     else:
         new_mask = formalin_only.get_fat_score_for_watershed_image(islands, np_graph, circularity_threshold=0.6, min_size=2, max_size=1000) # With erosion, adjust size thresholds
     new_mask_dilate_bool = binary_dilation(new_mask)
+    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
     
     if is_frozen:
         new_mask_dilate = new_mask_dilate_bool.astype(np.uint8)
@@ -141,6 +145,7 @@ def segment_liver(images_directory, output_directory, liver_name, image_name, is
         
         # Create new mask, convert to overlay with green mask
         new_mask = frozen_only.get_fat_score_for_watershed_image(islands_new, np_graph_new, circularity_threshold=0.7, contour_area_vs_perimeter=True, min_size=2, max_size=500) # With erosion, adjust size thresholds
+        print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
     else:
         new_mask = new_mask_dilate_bool
 

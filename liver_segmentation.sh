@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# To run this bash script, type `source ./liver_segmentation.sh` in the command line
+# To run this bash script, type `source liver_segmentation.sh` in the command line
 
 useConfig=True
 
