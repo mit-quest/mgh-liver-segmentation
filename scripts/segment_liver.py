@@ -124,7 +124,7 @@ def segment_liver(images_directory, output_directory, liver_name, image_name, is
     islands, np_graph = _watershed_and_mask(save_path, ij)
 
     # Create new mask, convert to overlay with green mask
-    new_mask = get_fat_score_for_watershed_image(islands, np_graph, circularity_threshold=0.6, min_size=2, max_size=1000) # With erosion, adjust size thresholds
+    new_mask = common.get_fat_score_for_watershed_image(islands, np_graph, circularity_threshold=0.6, min_size=2, max_size=1000) # With erosion, adjust size thresholds
     new_mask_dilate_bool = binary_dilation(new_mask)
     print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
     
@@ -141,7 +141,7 @@ def segment_liver(images_directory, output_directory, liver_name, image_name, is
         islands_new, np_graph_new = _watershed_and_mask(save_path, ij)
         
         # Create new mask, convert to overlay with green mask
-        new_mask = get_fat_score_for_watershed_image(islands_new, np_graph_new, circularity_threshold=0.7, contour_area_vs_perimeter=True, min_size=2, max_size=500) # With erosion, adjust size thresholds
+        new_mask = common.get_fat_score_for_watershed_image(islands_new, np_graph_new, circularity_threshold=0.7, contour_area_vs_perimeter=True, min_size=2, max_size=500) # With erosion, adjust size thresholds
         print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
     else:
         new_mask = new_mask_dilate_bool
