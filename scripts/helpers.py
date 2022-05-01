@@ -1,5 +1,6 @@
 import argparse
 from typing import List, Dict, Any
+import os
 
 from pptx import Presentation
 from pptx.util import Inches, Pt
