@@ -6,12 +6,15 @@ sys.setrecursionlimit(10000000)
 
 import imagej
 
+import helpers
+
 from segment_liver import segment_liver
-import common
+from estimate_steatosis import estimate_steatosis
 
 
 def main(**args: Dict[str, Any]) -> None:
     images_directory, output_directory, magnification, preservation, pathologist_estimates = args.values()
+    is_frozen = True if preservation == 'frozen' else False
     ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy')
     liver_folders = os.listdir(images_directory)
 
@@ -40,16 +43,22 @@ def main(**args: Dict[str, Any]) -> None:
             os.remove(csv_file_path)
 
         for image_name in liver_images:
+            print(image_name)
+            print("Beginning segmentation...")
             segment_liver(images_directory, output_directory,
-                                          liver_name, image_name, preservation, ij)
+                                          liver_name, image_name, is_frozen, ij)
+            print("Estimating steatosis...")
+            estimate_steatosis(images_directory, output_directory,
+                                          liver_name, image_name, is_frozen)
+            print(image_name + " complete!")
 
         # # Create slides for each liver
         # powerpoint_save_path = os.path.join(liver_output_folder,
         #                                     f'{liver_name}_slides.pptx')
-        # common.make_powerpoint(images_directory, output_directory,
+        # helpers.make_powerpoint(images_directory, output_directory,
         #                 pathologist_estimates, liver_name, powerpoint_save_path)
 
 
 if __name__ == "__main__":
-    kwargs = common.parse_args(sys.argv[1:])
+    kwargs = helpers.parse_args(sys.argv[1:])
     main(**kwargs)

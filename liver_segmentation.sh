@@ -23,7 +23,8 @@ if $useConfig; then
 	mag='20x'
 	pres='frozen'
 else
-	# Prompt user for images_directory, output_directory, pathologist_estimates, and magnification
+	# Prompt user for images_directory, output_directory, 
+	# pathologist_estimates, magnification, and preservation type
 	echo -e "Enter the relative path to the directory with liver biopsy images: "
 	read images
 
@@ -40,5 +41,5 @@ else
 	read pres
 fi
 
-# Run liver segmentation Python script
+# Run Python script
 python3 "runner.py" --images_directory $images --output_directory $output --pathologist_estimates $estimates --magnification $mag --preservation $pres

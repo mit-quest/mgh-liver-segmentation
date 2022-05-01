@@ -1,152 +1,81 @@
-import argparse
-from typing import List, Dict, Any
+import cv2
+import numpy as np
+from skimage.morphology import binary_opening, disk, remove_small_holes, remove_small_objects, binary_erosion
 
-from pptx import Presentation
-from pptx.util import Inches, Pt
+import frozen_only
 
+class Graph:
+    def __init__(self, row, col, graph):
+        self.ROW = row
+        self.COL = col
+        self.graph = graph
 
-def parse_args(args: List[str]) -> Dict[str, Any]:
-    parser = argparse.ArgumentParser(description="Estimate fat in liver biopsy images")
-    parser.add_argument(
-        "--images_directory",
-        type=str,
-        required=True,
-        help="Path to image directory",
-    )
-    parser.add_argument(
-        "--output_directory",
-        type=str,
-        required=True,
-        help="Path to output directory to save segmentation and fat estimate",
-    )
-    parser.add_argument(
-        "--magnification",
-        type=str,
-        required=True,
-        help="Magnification of images to use, e.g. 20x",
-    )
-    parser.add_argument(
-        "--preservation",
-        type=str,
-        required=True,
-        help="Preservation type ('formalin' or 'frozen')",
-    )
-    parser.add_argument(
-        "--pathologist_estimates",
-        type=str,
-        required=False,
-        help="Path to CSV with pathologist estimates",
-    )
-    args = vars(parser.parse_args())
-    return args
+    def isSafe(self, i, j, visited):
+        # Row number is in range, column number is in range, value is 1 and not yet visited
+        return 0 <= i and i < self.ROW and 0 <= j and j < self.COL and not visited[i][j] and self.graph[i][j]
 
+    def BFS(self, i, j, visited, island):
+        # Utility function to do BFS for a 2D boolean matrix. Uses only the 4 neighbors as adjacent vertices
+        rowNbr = [-1, 0, 1, 0]
+        colNbr = [0, -1, 0, 1]
+        q = []
+        q.append((i,j))
+        visited[i][j] = True
 
-# TODO: Center title and pathologist/algorithm estimates
-def make_powerpoint(images_directory, output_directory, pathologist_estimates, liver_name, powerpoint_save_path):
-    
-    # Slide title dimensions
-    title_left = Inches(4.4)
-    title_top = Inches(0)
-    title_width = Inches(1.2)
-    title_height = Inches(0.65)
-    title_font_size = Pt(36)
+        while len(q) != 0:
+            x,y = q.pop(0)
+            for k in range(len(rowNbr)):
+                if self.isSafe(x + rowNbr[k], y + colNbr[k], visited):
+                    island.append((x + rowNbr[k], y + colNbr[k]))
+                    visited[(x) + rowNbr[k]][y + colNbr[k]] = True
+                    q.append((x + rowNbr[k], y + colNbr[k]))
 
-    # Slide image dimensions
-    image_left1 = Inches(0.5)
-    image_top1 = Inches(0.65)
-    image_left2 = Inches(5.3)
-    image_top2 = Inches(3.8)
-    image_width = Inches(2)
-    image_horizontal_margin = Inches(0.2)
+    def findIslands(self):
+        # Make a bool array to mark visited cells. Initially all cells are unvisited
+        visited = [[False for j in range(self.COL)]for i in range(self.ROW)]
+        # Initialize count as 0 and traverse through cells of given matrix
+        index = 0
+        islands = []
+        for i in range(self.ROW):
+            for j in range(self.COL):
+                # If a cell with value 1 is not visited yet, then new island found
+                if visited[i][j] == False and self.graph[i][j] == 1:
+                    # Visit all cells in this island and increment island count
+                    island = []
+                    self.BFS(i, j, visited, island)
+                    islands.append(island)
+                    index += 1
+        return islands
 
-    # Slide fat estimate dimensions
-    fat_estimate_left1 = Inches(3.35)
-    fat_estimate_top1 = Inches(3.3)
-    fat_estimate_left2 = Inches(8.1)
-    fat_estimate_top2 = Inches(6.45)
-    fat_estimate_width = Inches(0.7)
-    fat_estimate_height = Inches(0.4)
-    fat_estimate_font_size = Pt(20)
+def new_graph(np_graph):
 
-    # Slide bottom text dimensions
-    bottom_text_top = Inches(6.95)
-    bottom_text_left = Inches(0.4)
-    bottom_text_width = Inches(3.3)
-    bottom_text_height = Inches(0.5)
+    row, col = np_graph.shape
+    graph = np_graph.tolist()
+    g = Graph(row, col, graph)
+    islands = g.findIslands()
 
-    # Map index id to slide dimensions
-    image_left_map = {0: image_left1, 1: image_left2, 2: image_left1, 3: image_left2}
-    image_top_map = {0: image_top1, 1: image_top1, 2: image_top2, 3: image_top2}
-    fat_estimate_left_map = {0: fat_estimate_left1, 1: fat_estimate_left2, 2: fat_estimate_left1, 3: fat_estimate_left2}
-    fat_estimate_top_map = {0: fat_estimate_top1, 1: fat_estimate_top1, 2: fat_estimate_top2, 3: fat_estimate_top2}
+    return islands
 
-    prs = Presentation()
-    blank_slide_layout = prs.slide_layouts[6]
-    liver_folder_path = os.path.join(output_directory, liver_name)
-    liver_files = os.listdir(liver_folder_path)
-    fat_estimates_path = os.path.join(liver_folder_path, f'{liver_name}_fat_estimates.csv')
+def prepare_image(image_path, is_frozen):
+    if is_frozen:
+        white_areas_in_liver_tissue = frozen_only.find_white_areas_in_liver_tissue(image_path)
+        bool_input = white_areas_in_liver_tissue
+    else:
+        # Find sharpened, grayscale, and binary images
+        original_image, sharpened_image = sharpen_image(image_path)
+        sharpened_gray = cv2.cvtColor(sharpened_image, cv2.COLOR_BGR2GRAY)
+        _, sharpened_binary = cv2.threshold(sharpened_gray, 195, 255, cv2.THRESH_BINARY)
+        bool_input = sharpened_binary
 
-    # Find overall fat estimate for liver
-    df = pd.read_csv(fat_estimates_path, header=None)
-    num_rows = len(df.index)
-    liver_sum_estimates = 0
-    liver_num_estimates = 0
-    for index, row in df.iterrows():
-        total_fat = row[1]
-        liver_sum_estimates += float(total_fat)
-        liver_num_estimates += 1
-    liver_overall_estimate = liver_sum_estimates / liver_num_estimates
+    # Remove noise
+    opened_image_bool = remove_small_holes(bool_input, area_threshold=2) # Change black area < 5 pixels to white
+    opened_image_bool = remove_small_objects(opened_image_bool, min_size=10) # Change white area < 10 pixels to black
+    opened_image = opened_image_bool.astype(np.uint8)  # Convert to an unsigned byte
+    opened_image *= 255
 
-    # Get pathologist estimates for liver
-    pathologist_estimates_df = pd.read_csv(pathologist_estimates)
-    pathologist_liver_estimates = 'N/A'
-    for index, row in pathologist_estimates_df.iterrows():
-        liver = row[0]
-        if liver == liver_name:
-            liver_fat_combined = ''
-            for i in range(1, len(row)):
-                if len(liver_fat_combined) == 0:
-                    liver_fat_combined = row[i]
-                else:
-                    liver_fat_combined += ', ' + row[i]
-            pathologist_liver_estimates = liver_fat_combined
-            break
+    # Apply erosion
+    erode_image_bool = binary_erosion(opened_image_bool)
+    erode_image = erode_image_bool.astype(np.uint8)
+    erode_image *= 255
 
-    # Create slides
-    for index, row in df.iterrows():
-        image_name = row[0]
-        total_fat = row[1]
-        macro_fat = row[2]
-        original_image_path = os.path.join(images_directory, liver_name, image_name)
-        mask_path = os.path.join(output_directory, liver_name, image_name)
-        index_id = index % 4
-
-        if index % 4 == 0:
-            # Add liver name as title
-            slide = prs.slides.add_slide(blank_slide_layout)
-            shapes = slide.shapes
-            txBox = slide.shapes.add_textbox(title_left, title_top, title_width, title_height)
-            tf = txBox.text_frame
-            p = tf.paragraphs[0]
-            p.text = liver_name
-            p.font.size = title_font_size
-
-        pic = slide.shapes.add_picture(original_image_path, image_left_map[index_id], image_top_map[index_id], width=image_width)
-        pic = slide.shapes.add_picture(mask_path, image_left_map[index_id]+image_width+image_horizontal_margin, image_top_map[index_id], width=image_width)
-        txBox = slide.shapes.add_textbox(fat_estimate_left_map[index_id], fat_estimate_top_map[index_id], fat_estimate_width, fat_estimate_height)
-        tf = txBox.text_frame
-        p = tf.paragraphs[0]
-        p.text = f'{total_fat}%'
-        p.font.size = fat_estimate_font_size
-
-        if index % 4 == 3 or index == num_rows-1:
-            # Add bottom textbox with overall estimates
-            txBox = slide.shapes.add_textbox(bottom_text_left, bottom_text_top,
-                                             bottom_text_width, bottom_text_height)
-            tf = txBox.text_frame
-            p = tf.paragraphs[0]
-            fat_estimates = f'Pathologist macro estimate: {pathologist_liver_estimates}% | Algorithm total estimate: {round(liver_overall_estimate, 2)}%'
-            p.text = fat_estimates
-            p.font.size = Pt(20)
-
-    prs.save(powerpoint_save_path)
+    return erode_image_bool
