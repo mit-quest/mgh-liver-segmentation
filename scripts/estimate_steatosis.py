@@ -14,6 +14,36 @@ import time
 import common
 
 
+def _calculate_liver_area(image_path):
+    """
+    Calculate the number of pixels corresponding to liver tissue
+    """
+    src = cv2.imread(image_path)
+    gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    gray_blurred = cv2.blur(gray, (3, 3))
+
+    # Apply Hough transform
+    detected_circles = cv2.HoughCircles(gray_blurred,
+                       cv2.HOUGH_GRADIENT, 1, 400, param1 = 50,
+                       param2 = 30, minRadius = 230, maxRadius = 300)
+
+    # Draw detected circles
+    if detected_circles is not None:
+        detected_circles = np.uint16(np.around(detected_circles))
+        for pt in detected_circles[0, :]:
+            a, b, r = pt[0], pt[1], pt[2]
+            cv2.circle(src, (a, b), r, (0, 255, 0), 2)
+
+        num_background_pixels = 0
+        num_rows, num_cols, _ = src.shape
+        background_area_array = np.zeros((num_rows, num_cols))
+        for i in range(num_rows):
+            for j in range(num_cols):
+                if not (((i - b)**2 + (j - a)**2) < r**2): # not inside circle
+                    num_background_pixels += 1
+                    background_area_array[i][j] = 255
+    return num_background_pixels, background_area_array
+
 def _calculate_large_white_area(image_path, is_frozen):
     """
     Calculate the number of pixels corresponding to large white areas (tears or not liver tissue)
@@ -46,36 +76,6 @@ def _calculate_large_white_area(image_path, is_frozen):
                     large_white_area_array[x][y] = 255
     return num_large_white_area_pixels, large_white_area_array
 
-def _calculate_liver_area(image_path):
-    """
-    Calculate the number of pixels corresponding to liver tissue
-    """
-    src = cv2.imread(image_path)
-    gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
-    gray_blurred = cv2.blur(gray, (3, 3))
-
-    # Apply Hough transform
-    detected_circles = cv2.HoughCircles(gray_blurred,
-                       cv2.HOUGH_GRADIENT, 1, 400, param1 = 50,
-                       param2 = 30, minRadius = 230, maxRadius = 300)
-
-    # Draw detected circles
-    if detected_circles is not None:
-        detected_circles = np.uint16(np.around(detected_circles))
-        for pt in detected_circles[0, :]:
-            a, b, r = pt[0], pt[1], pt[2]
-            cv2.circle(src, (a, b), r, (0, 255, 0), 2)
-
-        num_background_pixels = 0
-        num_rows, num_cols, _ = src.shape
-        background_area_array = np.zeros((num_rows, num_cols))
-        for i in range(num_rows):
-            for j in range(num_cols):
-                if not (((i - b)**2 + (j - a)**2) < r**2): # not inside circle
-                    num_background_pixels += 1
-                    background_area_array[i][j] = 255
-    return num_background_pixels, background_area_array
-
 def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
     image_255 = copy.deepcopy(image)*255 # Use cv2_imshow to show image
     image_inv = copy.deepcopy(image)
@@ -94,7 +94,6 @@ def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
     liver_area = (image_255.shape[0] * image_255.shape[1]) - num_black_border_pixels - num_white_island_pixels
 
     # Find fat area using predicted mask
-    print("Finding macro and micro globule areas...")
     fat_areas = []
     mask_255 = copy.deepcopy(mask)*255
     mask_macro = copy.deepcopy(mask) # Not needed but helpful for debugging
@@ -127,7 +126,6 @@ def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
     num_micro = len(micro)
     total_macro_area = sum(macro)
     total_micro_area = sum(micro)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Calculate fat estimates with total liver area
     total_fat_percentage = total_fat_area / liver_area * 100
@@ -136,7 +134,6 @@ def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
 
 def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, start_time):
     # Get original images
-    print("Getting original images...")
     image_list = []
     image_paths = []
     for liver_file in image_names:
@@ -150,10 +147,8 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     image_np = np.asarray(image_list)
     images = np.asarray(image_np, dtype=np.float32)/255
     images = images.reshape(images.shape[0], images.shape[1], images.shape[2], 1)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Get new masks
-    print("Getting new masks...")
     mask_list = []
     for liver_file in image_names:
         mask_file = os.path.join(new_mask_folder, f'{liver_file}')
@@ -165,7 +160,6 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     mask_np = np.asarray(mask_list)
     masks = np.asarray(mask_np, dtype=np.float32)/255
     masks = masks.reshape(masks.shape[0], masks.shape[1], masks.shape[2], 1)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Find mean total and macro fat percent
     liver_total_fat = []
@@ -191,8 +185,6 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     return round(mean_total_fat, 2), round(mean_macro_fat, 2)
 
 def estimate_steatosis(images_directory, output_directory, liver_name, image_name, is_frozen):	
-    start_time = time.monotonic()
-
     original_image_path = os.path.join(images_directory, liver_name)
     mask_image_path = os.path.join(output_directory, liver_name)
     image_path = os.path.join(images_directory, liver_name, image_name)
