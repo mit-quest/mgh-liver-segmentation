@@ -18,6 +18,9 @@ def _calculate_liver_area(image_path):
     """
     Calculate the number of pixels corresponding to liver tissue
     """
+    print("Calculating liver area...")
+    start_time = time.monotonic()
+
     src = cv2.imread(image_path)
     gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     gray_blurred = cv2.blur(gray, (3, 3))
@@ -42,12 +45,19 @@ def _calculate_liver_area(image_path):
                 if not (((i - b)**2 + (j - a)**2) < r**2): # not inside circle
                     num_background_pixels += 1
                     background_area_array[i][j] = 255
+
+    print("Calculating liver area complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
+    
     return num_background_pixels, background_area_array
 
 def _calculate_large_white_area(image_path, is_frozen):
     """
     Calculate the number of pixels corresponding to large white areas (tears or not liver tissue)
     """
+
+    print("Calculating large white areas...")
+    start_time = time.monotonic()
+
     image = cv2.imread(image_path)
     erode_image_bool = common.prepare_image(image_path, is_frozen)
 
@@ -74,21 +84,20 @@ def _calculate_large_white_area(image_path, is_frozen):
                 num_large_white_area_pixels += island_len
                 for x, y in island:
                     large_white_area_array[x][y] = 255
+
+    print("Calculating large white areas complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
+
     return num_large_white_area_pixels, large_white_area_array
 
-def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
+def _count_fat_macro_micro(image, mask, image_path, is_frozen):
     image_255 = copy.deepcopy(image)*255 # Use cv2_imshow to show image
     image_inv = copy.deepcopy(image)
 
     # Find area of black background in original image
-    print("Calculating liver area...")
     num_black_border_pixels, _ = _calculate_liver_area(image_path)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Find area of large white islands
-    print("Calculating large white area...")
     num_white_island_pixels, _ = _calculate_large_white_area(image_path, is_frozen)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Find liver area excluding border and large tears
     liver_area = (image_255.shape[0] * image_255.shape[1]) - num_black_border_pixels - num_white_island_pixels
@@ -130,9 +139,10 @@ def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
     # Calculate fat estimates with total liver area
     total_fat_percentage = total_fat_area / liver_area * 100
     macro_fat_percentage = total_macro_area / liver_area * 100
+    
     return total_fat_percentage, macro_fat_percentage
 
-def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, start_time):
+def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen):
     # Get original images
     image_list = []
     image_paths = []
@@ -166,7 +176,7 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     liver_macro_fat = []
     num_liver_files = len(image_names)
     for i in range(num_liver_files):
-        total_fat, macro_fat = _count_fat_macro_micro(images[i], masks[i], image_paths[i], is_frozen, start_time)
+        total_fat, macro_fat = _count_fat_macro_micro(images[i], masks[i], image_paths[i], is_frozen)
         liver_total_fat.append(total_fat)
         liver_macro_fat.append(macro_fat)
 
@@ -188,7 +198,7 @@ def estimate_steatosis(images_directory, output_directory, liver_name, image_nam
     original_image_path = os.path.join(images_directory, liver_name)
     mask_image_path = os.path.join(output_directory, liver_name)
     image_path = os.path.join(images_directory, liver_name, image_name)
-    mean_total_fat, mean_macro_fat = _mean_fat_percent([image_name], original_image_path, mask_image_path, is_frozen, start_time)
+    mean_total_fat, mean_macro_fat = _mean_fat_percent([image_name], original_image_path, mask_image_path, is_frozen)
 
     # Save fat estimates per liver to CSV file. Save in order of image name, total fat, macro fat (arbitrary threshold)
     csv_save_path = os.path.join(output_directory, liver_name, f'{liver_name}_fat_estimates.csv')

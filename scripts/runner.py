@@ -1,5 +1,5 @@
 from datetime import timedelta
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from typing import List, Dict, Any
 import time
 
@@ -10,23 +10,23 @@ sys.setrecursionlimit(10000000)
 import imagej
 
 import helpers
-from segment_liver import segment_liver
+from segment_image import segment_image
 from estimate_steatosis import estimate_steatosis
 
 
-def _process_image(images_directory, output_directory, liver_name, image_name, is_frozen):
-    start_time = time.monotonic() 
+def _process_image(images_directory, output_directory, liver_name, image_name, is_frozen): 
+    start_time = time.monotonic()
+
     ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy') 
 
-    print("Beginning segmentation...")
-    segment_liver(images_directory, output_directory,
+    print("Beginning segmentation of " + image_name)
+    segment_image(images_directory, output_directory,
                                   liver_name, image_name, is_frozen, ij)
-    print("Estimating steatosis...")
+    print("Estimating steatosis of " + image_name)
     estimate_steatosis(images_directory, output_directory,
                                   liver_name, image_name, is_frozen)
 
-    print(image_name + " complete!")
-    print("Image processed in " + str(timedelta(seconds=time.monotonic() - start_time)))
+    print(image_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
 
 def main(**args: Dict[str, Any]) -> None:
@@ -41,7 +41,9 @@ def main(**args: Dict[str, Any]) -> None:
 
     for liver_name in liver_folders:
 
-        print("\nProcessing " + liver_name)
+        print("\n\nProcessing " + liver_name)
+        start_time = time.monotonic()
+
         # Create liver output folder if it does not already exist
         liver_output_folder = os.path.join(output_directory, liver_name)
         if not os.path.exists(liver_output_folder):
@@ -61,7 +63,8 @@ def main(**args: Dict[str, Any]) -> None:
             if os.path.exists(csv_file_path):
                 os.remove(csv_file_path)
 
-            pool = Pool(processes=4)
+            n_procs = cpu_count if n >= cpu_count else len(liver_images)
+            pool = Pool(processes=n_procs)
             input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen] for image_name in liver_images]
             pool.starmap(_process_image, input_list) 
             pool.close()
@@ -75,6 +78,7 @@ def main(**args: Dict[str, Any]) -> None:
         else:
             print(liver_folder_path + " is either hidden or not a directory. Skipping.")            
 
+        print(liver_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
 if __name__ == "__main__":
     kwargs = helpers.parse_args(sys.argv[1:])
