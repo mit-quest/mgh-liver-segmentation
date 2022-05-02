@@ -1,5 +1,7 @@
 import argparse
 from typing import List, Dict, Any
+import os
+import pandas as pd
 
 from pptx import Presentation
 from pptx.util import Inches, Pt

@@ -1,7 +1,6 @@
 import copy
 import csv
 import cv2
-from datetime import timedelta
 import math
 import numpy as np
 import os
@@ -9,42 +8,9 @@ from PIL import Image
 from skimage.morphology import disk, binary_opening
 from skimage.transform import rescale, resize
 from statistics import median
-import time
 
 import common
 
-
-def _calculate_large_white_area(image_path, is_frozen):
-    """
-    Calculate the number of pixels corresponding to large white areas (tears or not liver tissue)
-    """
-    image = cv2.imread(image_path)
-    erode_image_bool = common.prepare_image(image_path, is_frozen)
-
-    islands = common.new_graph(erode_image_bool)
-
-    num_large_white_area_pixels = 0
-    large_white_area_array = np.zeros((image.shape[0], image.shape[1]))
-    for island in islands:
-        island_len = len(island)
-        if island_len > 0:
-            island_mask = np.zeros(erode_image_bool.shape)
-            for x, y in island:
-                island_mask[x][y] = 1
-            island_mask = island_mask.astype(np.uint8)
-            contours, hierarchy = cv2.findContours(island_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-            contour = contours[0]
-            contour_area = cv2.contourArea(contour)
-            contour_perimeter = cv2.arcLength(contour, True)
-            center, radius = cv2.minEnclosingCircle(contour)
-            ratio = contour_area / (math.pi * radius * radius)
-
-            if (island_len > 2000) or (island_len > 600 and ratio < 0.3):
-                num_large_white_area_pixels += island_len
-                for x, y in island:
-                    large_white_area_array[x][y] = 255
-    return num_large_white_area_pixels, large_white_area_array
 
 def _calculate_liver_area(image_path):
     """
@@ -74,27 +40,57 @@ def _calculate_liver_area(image_path):
                 if not (((i - b)**2 + (j - a)**2) < r**2): # not inside circle
                     num_background_pixels += 1
                     background_area_array[i][j] = 255
+    
     return num_background_pixels, background_area_array
 
-def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
+def _calculate_large_white_area(image_path, is_frozen):
+    """
+    Calculate the number of pixels corresponding to large white areas (tears or not liver tissue)
+    """
+    image = cv2.imread(image_path)
+
+    erode_image_bool = common.prepare_image(image_path, is_frozen)
+
+    islands = common.new_graph(erode_image_bool)
+
+    num_large_white_area_pixels = 0
+    large_white_area_array = np.zeros((image.shape[0], image.shape[1]))
+    for island in islands:
+        island_len = len(island)
+        if island_len > 0:
+            island_mask = np.zeros(erode_image_bool.shape)
+            for x, y in island:
+                island_mask[x][y] = 1
+            island_mask = island_mask.astype(np.uint8)
+            contours, hierarchy = cv2.findContours(island_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+            contour = contours[0]
+            contour_area = cv2.contourArea(contour)
+            contour_perimeter = cv2.arcLength(contour, True)
+            center, radius = cv2.minEnclosingCircle(contour)
+            ratio = contour_area / (math.pi * radius * radius)
+
+            if (island_len > 2000) or (island_len > 600 and ratio < 0.3):
+                num_large_white_area_pixels += island_len
+                for x, y in island:
+                    large_white_area_array[x][y] = 255
+
+    return num_large_white_area_pixels, large_white_area_array
+
+def _count_fat_macro_micro(image, mask, image_path, is_frozen):
     image_255 = copy.deepcopy(image)*255 # Use cv2_imshow to show image
     image_inv = copy.deepcopy(image)
 
     # Find area of black background in original image
-    print("Calculating liver area...")
     num_black_border_pixels, _ = _calculate_liver_area(image_path)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Find area of large white islands
-    print("Calculating large white area...")
     num_white_island_pixels, _ = _calculate_large_white_area(image_path, is_frozen)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Find liver area excluding border and large tears
     liver_area = (image_255.shape[0] * image_255.shape[1]) - num_black_border_pixels - num_white_island_pixels
 
     # Find fat area using predicted mask
-    print("Finding macro and micro globule areas...")
     fat_areas = []
     mask_255 = copy.deepcopy(mask)*255
     mask_macro = copy.deepcopy(mask) # Not needed but helpful for debugging
@@ -127,16 +123,15 @@ def _count_fat_macro_micro(image, mask, image_path, is_frozen, start_time):
     num_micro = len(micro)
     total_macro_area = sum(macro)
     total_micro_area = sum(micro)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Calculate fat estimates with total liver area
     total_fat_percentage = total_fat_area / liver_area * 100
     macro_fat_percentage = total_macro_area / liver_area * 100
+    
     return total_fat_percentage, macro_fat_percentage
 
-def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, start_time):
+def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen):
     # Get original images
-    print("Getting original images...")
     image_list = []
     image_paths = []
     for liver_file in image_names:
@@ -150,10 +145,8 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     image_np = np.asarray(image_list)
     images = np.asarray(image_np, dtype=np.float32)/255
     images = images.reshape(images.shape[0], images.shape[1], images.shape[2], 1)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Get new masks
-    print("Getting new masks...")
     mask_list = []
     for liver_file in image_names:
         mask_file = os.path.join(new_mask_folder, f'{liver_file}')
@@ -165,14 +158,13 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     mask_np = np.asarray(mask_list)
     masks = np.asarray(mask_np, dtype=np.float32)/255
     masks = masks.reshape(masks.shape[0], masks.shape[1], masks.shape[2], 1)
-    print("Completed in " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     # Find mean total and macro fat percent
     liver_total_fat = []
     liver_macro_fat = []
     num_liver_files = len(image_names)
     for i in range(num_liver_files):
-        total_fat, macro_fat = _count_fat_macro_micro(images[i], masks[i], image_paths[i], is_frozen, start_time)
+        total_fat, macro_fat = _count_fat_macro_micro(images[i], masks[i], image_paths[i], is_frozen)
         liver_total_fat.append(total_fat)
         liver_macro_fat.append(macro_fat)
 
@@ -191,12 +183,10 @@ def _mean_fat_percent(image_names, original_folder, new_mask_folder, is_frozen, 
     return round(mean_total_fat, 2), round(mean_macro_fat, 2)
 
 def estimate_steatosis(images_directory, output_directory, liver_name, image_name, is_frozen):	
-    start_time = time.monotonic()
-
     original_image_path = os.path.join(images_directory, liver_name)
     mask_image_path = os.path.join(output_directory, liver_name)
     image_path = os.path.join(images_directory, liver_name, image_name)
-    mean_total_fat, mean_macro_fat = _mean_fat_percent([image_name], original_image_path, mask_image_path, is_frozen, start_time)
+    mean_total_fat, mean_macro_fat = _mean_fat_percent([image_name], original_image_path, mask_image_path, is_frozen)
 
     # Save fat estimates per liver to CSV file. Save in order of image name, total fat, macro fat (arbitrary threshold)
     csv_save_path = os.path.join(output_directory, liver_name, f'{liver_name}_fat_estimates.csv')

@@ -44,6 +44,8 @@ fi
 if [ -z "$estimates" ]
 then
 	estimates='False'
+else
+	
 fi
 
 # Run Python script

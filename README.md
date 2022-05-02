@@ -13,7 +13,7 @@ Before you run the script, you will need to have `conda` installed. The instruct
 To run the script, open the command line. Navigate to the directory with both the bash script and Python script. Then, run the following line in the command line.
 
 ```bash
-source ./liver_segmentation.sh
+source liver_segmentation.sh
 ```
 
 Once the necessary dependencies are installed, you will be prompted for the following information:
@@ -50,7 +50,7 @@ Below is an example directory containing the liver biopsy images (`formalin_imag
 ├── liver_segmentation.sh
 ```
 
-* The directory with liver biopsy images should contain subdirectories named as only liver names. The names of images in the subdirectories should contain the liver name and the magnification of the image. The magnification should be written in the format of `20x`.
+* The directory with liver biopsy images should contain subdirectories named as only liver names. The names of images in the subdirectories should include the magnification of the image. The magnification should be written in the format of `20x`.
 
 * The directory to save output should be empty before you run the script. If it does not exist, it will be created. This directory will save the segmented liver images and the fat estimates.
 
