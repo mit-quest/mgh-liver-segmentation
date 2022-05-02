@@ -1,7 +1,6 @@
 import copy
 import csv
 import cv2
-from datetime import timedelta
 import math
 import numpy as np
 import os
@@ -9,7 +8,6 @@ from PIL import Image
 from skimage.morphology import disk, binary_opening
 from skimage.transform import rescale, resize
 from statistics import median
-import time
 
 import common
 
@@ -18,9 +16,6 @@ def _calculate_liver_area(image_path):
     """
     Calculate the number of pixels corresponding to liver tissue
     """
-    print("Calculating liver area...")
-    start_time = time.monotonic()
-
     src = cv2.imread(image_path)
     gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     gray_blurred = cv2.blur(gray, (3, 3))
@@ -45,8 +40,6 @@ def _calculate_liver_area(image_path):
                 if not (((i - b)**2 + (j - a)**2) < r**2): # not inside circle
                     num_background_pixels += 1
                     background_area_array[i][j] = 255
-
-    print("Calculating liver area complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
     
     return num_background_pixels, background_area_array
 
@@ -54,11 +47,8 @@ def _calculate_large_white_area(image_path, is_frozen):
     """
     Calculate the number of pixels corresponding to large white areas (tears or not liver tissue)
     """
-
-    print("Calculating large white areas...")
-    start_time = time.monotonic()
-
     image = cv2.imread(image_path)
+
     erode_image_bool = common.prepare_image(image_path, is_frozen)
 
     islands = common.new_graph(erode_image_bool)
@@ -84,8 +74,6 @@ def _calculate_large_white_area(image_path, is_frozen):
                 num_large_white_area_pixels += island_len
                 for x, y in island:
                     large_white_area_array[x][y] = 255
-
-    print("Calculating large white areas complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
     return num_large_white_area_pixels, large_white_area_array
 

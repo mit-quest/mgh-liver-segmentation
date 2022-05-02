@@ -116,6 +116,7 @@ def get_fat_score_for_watershed_image(islands, original_mask, circularity_thresh
     return new_mask
 
 def prepare_image(image_path, is_frozen):
+
     if is_frozen:
         white_areas_in_liver_tissue = frozen_only.find_white_areas_in_liver_tissue(image_path)
         bool_input = white_areas_in_liver_tissue

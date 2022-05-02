@@ -20,11 +20,15 @@ def _process_image(images_directory, output_directory, liver_name, image_name, i
     ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy') 
 
     print("Beginning segmentation of " + image_name)
+    seg_start_time = time.monotonic()
     segment_image(images_directory, output_directory,
                                   liver_name, image_name, is_frozen, ij)
+    print(image_name + " segmentation complete! Time taken: " + str(timedelta(seconds=time.monotonic() - seg_start_time)))
     print("Estimating steatosis of " + image_name)
+    est_start_time = time.monotonic()
     estimate_steatosis(images_directory, output_directory,
                                   liver_name, image_name, is_frozen)
+    print(image_name + " steatosis estimation complete! Time taken: " + str(timedelta(seconds=time.monotonic() - est_start_time)))
 
     print(image_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
@@ -32,7 +36,6 @@ def _process_image(images_directory, output_directory, liver_name, image_name, i
 def main(**args: Dict[str, Any]) -> None:
     images_directory, output_directory, magnification, preservation, pathologist_estimates = args.values()
     is_frozen = True if preservation == 'frozen' else False
-    # ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy')
     liver_folders = os.listdir(images_directory)
 
     # Create output folder if it does not already exist
@@ -63,7 +66,7 @@ def main(**args: Dict[str, Any]) -> None:
             if os.path.exists(csv_file_path):
                 os.remove(csv_file_path)
 
-            n_procs = cpu_count if n >= cpu_count else len(liver_images)
+            n_procs = cpu_count() if len(liver_images) >= cpu_count() else len(liver_images)
             pool = Pool(processes=n_procs)
             input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen] for image_name in liver_images]
             pool.starmap(_process_image, input_list) 
