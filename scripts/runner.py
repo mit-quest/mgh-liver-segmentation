@@ -1,3 +1,4 @@
+import ast
 from datetime import timedelta
 from multiprocessing import Pool, cpu_count
 from typing import List, Dict, Any
@@ -17,7 +18,7 @@ from estimate_steatosis import estimate_steatosis
 def _process_image(images_directory, output_directory, liver_name, image_name, is_frozen): 
     start_time = time.monotonic()
 
-    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy') 
+    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy', mode='headless') 
 
     print("Beginning segmentation of " + image_name)
     seg_start_time = time.monotonic()
@@ -73,7 +74,7 @@ def main(**args: Dict[str, Any]) -> None:
             pool.close()
 
             # Create slides for each liver
-            if pathologist_estimates:
+            if ast.literal_eval(pathologist_estimates):
                 powerpoint_save_path = os.path.join(liver_output_folder,
                                                     f'{liver_name}_slides.pptx')
                 helpers.make_powerpoint(images_directory, output_directory,
@@ -86,3 +87,4 @@ def main(**args: Dict[str, Any]) -> None:
 if __name__ == "__main__":
     kwargs = helpers.parse_args(sys.argv[1:])
     main(**kwargs)
+    sys.exit(0) # force exit else JVM hangs (known imageJ issue)
