@@ -17,11 +17,7 @@ else
 fi
 
 if $useConfig; then
-	images='frozen_samples'
-	output='output'
-	estimates=''
-	mag='20x'
-	pres='frozen'
+	source config.file
 else
 	# Prompt user for images_directory, output_directory, 
 	# pathologist_estimates, magnification, and preservation type
@@ -37,7 +33,7 @@ else
 	echo -e "Enter the biopsy preservation type ('frozen' or 'formalin'): "
 	read pres
 
-	echo -e "[OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press "Enter" to leave blank): "
+	echo -e "[OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press 'Enter' to leave blank): "
 	read estimates
 fi
 

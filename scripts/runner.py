@@ -73,6 +73,8 @@ def main(**args: Dict[str, Any]) -> None:
             pool.starmap(_process_image, input_list) 
             pool.close()
 
+            print(liver_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
+
             # Create slides for each liver
             if ast.literal_eval(pathologist_estimates):
                 powerpoint_save_path = os.path.join(liver_output_folder,
@@ -81,8 +83,6 @@ def main(**args: Dict[str, Any]) -> None:
                                 pathologist_estimates, liver_name, powerpoint_save_path)
         else:
             print(liver_folder_path + " is either hidden or not a directory. Skipping.")            
-
-        print(liver_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
 if __name__ == "__main__":
     kwargs = helpers.parse_args(sys.argv[1:])
