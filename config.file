@@ -1,0 +1,16 @@
+# Configuration for liver segmentation
+
+# the relative path to the directory with liver biopsy images
+images='frozen_samples'
+
+# the relative path to the directory to save output
+output='output'
+
+# the magnification of the images (e.g. 20x)
+mag='20x'
+
+# the biopsy preservation type ('frozen' or 'formalin')
+pres='frozen'
+
+# [OPTIONAL] the relative path to a CSV file with pathologist fat estimates for comparison
+estimates=''

@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # To run this bash script, type `source liver_segmentation.sh` in the command line
-
-useConfig=True
+# Use `source liver_segmentation.sh use_config` to use values set in config.file
 
 # Create environment with pyimagej, proceed with yes
 if ! { conda env list | grep 'liver_segmentation'; } >/dev/null 2>&1; then
@@ -16,12 +15,13 @@ else
 	conda activate liver_segmentation
 fi
 
-if $useConfig; then
-	images='frozen_samples'
-	output='output'
-	estimates=''
-	mag='20x'
-	pres='frozen'
+use_config=False
+if [[ $# -eq 1 && $1 = "use_config" ]]; then
+	use_config=True
+fi
+
+if $use_config; then
+	source config.file
 else
 	# Prompt user for images_directory, output_directory, 
 	# pathologist_estimates, magnification, and preservation type
@@ -37,15 +37,13 @@ else
 	echo -e "Enter the biopsy preservation type ('frozen' or 'formalin'): "
 	read pres
 
-	echo -e "[OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press "Enter" to leave blank): "
+	echo -e "[OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press 'Enter' to leave blank): "
 	read estimates
 fi
 
 if [ -z "$estimates" ]
 then
 	estimates='False'
-else
-	
 fi
 
 # Run Python script
