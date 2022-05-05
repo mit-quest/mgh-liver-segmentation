@@ -30,7 +30,13 @@ Enter the biopsy preservation type ('frozen' or 'formalin'):
 [OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press "Enter" to leave blank):
 ```
 
-Alternatively, in `liver_segmentation.sh` you can set `useConfig=True` and enter your values directly. The default configuration will process the sample images in the `frozen_samples` directory.
+Alternatively, you can set your values directly in `config.file` and run the script with the following command:
+
+```bash
+source liver_segmentation.sh use_config
+```
+
+The default configuration in `config.file` will process the sample images in the `frozen_samples` directory.
 
 ## Example
 
