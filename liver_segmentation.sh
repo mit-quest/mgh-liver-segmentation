@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # To run this bash script, type `source liver_segmentation.sh` in the command line
-
-useConfig=True
+# Use `source liver_segmentation.sh use_config` to use values set in config.file
 
 # Create environment with pyimagej, proceed with yes
 if ! { conda env list | grep 'liver_segmentation'; } >/dev/null 2>&1; then
@@ -16,7 +15,12 @@ else
 	conda activate liver_segmentation
 fi
 
-if $useConfig; then
+use_config=False
+if [[ $# -eq 1 && $1 = "use_config" ]]; then
+	use_config=True
+fi
+
+if $use_config; then
 	source config.file
 else
 	# Prompt user for images_directory, output_directory, 
@@ -40,8 +44,6 @@ fi
 if [ -z "$estimates" ]
 then
 	estimates='False'
-else
-	
 fi
 
 # Run Python script
