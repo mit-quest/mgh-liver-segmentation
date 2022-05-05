@@ -7,7 +7,7 @@ images='frozen_samples'
 output='output'
 
 # the magnification of the images (e.g. 20x)
-mag='20x'
+mag='10x'
 
 # the biopsy preservation type ('frozen' or 'formalin')
 pres='frozen'
