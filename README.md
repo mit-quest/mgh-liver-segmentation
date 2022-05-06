@@ -23,11 +23,11 @@ Enter the relative path to the directory with liver biopsy images:
 
 Enter the relative path to the directory to save output:
 
-Enter the magnification of the images (e.g. 20x):
+Enter the magnification of the images ('10x', '20x', or '40x'):
 
 Enter the biopsy preservation type ('frozen' or 'formalin'): 
 
-[OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press "Enter" to leave blank):
+[OPTIONAL] Enter the relative path to a CSV file with pathologist fat estimates for comparison (press "Enter" to leave blank):
 ```
 
 Alternatively, you can set your values directly in `config.file` and run the script with the following command:
@@ -68,7 +68,7 @@ HF-2,0,10
 HF-3,40,25
 ```
 
-* The magnification of the images to use should be written as `20x` and should match the magnification written in the image names.
+* The magnification of the images to use should be written as `20x` and should match the magnification written in the image names. Although `10x` magnification is supported, for best results, either `20x` or `40x` should be used.
 
 The following is an example response to the prompts above.
 
@@ -79,14 +79,14 @@ formalin_images
 Enter the relative path to the directory to save output:
 formalin_output
 
-Enter the relative path to the CSV file with pathologist fat estimates:
-/path/to/pathologist_estimates_macro.csv
-
-Enter the magnification of the images (e.g. 20x):
+Enter the magnification of the images ('10x', '20x', or '40x'):
 20x
 
 Enter the biopsy preservation type ('frozen' or 'formalin'): 
 frozen
+
+[OPTIONAL] Enter the relative path to a CSV file with pathologist fat estimates for comparison (press "Enter" to leave blank):
+/path/to/pathologist_estimates_macro.csv
 ```
 
 ## License

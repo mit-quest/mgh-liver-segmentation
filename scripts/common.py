@@ -87,7 +87,7 @@ def get_fat_score_for_watershed_image(islands, original_mask, circularity_thresh
             contour_perimeter = cv2.arcLength(contour, True)
             center, radius = cv2.minEnclosingCircle(contour)
 
-            if contour_area_vs_perimeter:
+            if contour_area_vs_perimeter and contour_perimeter > 0:
                 # --- Method to calculate circularity: contour area vs. contour perimeter ---
                 circularity = (2 * math.pi * math.sqrt(contour_area / math.pi)) / contour_perimeter
             else:
@@ -115,7 +115,32 @@ def get_fat_score_for_watershed_image(islands, original_mask, circularity_thresh
     new_mask = new_mask.astype(np.uint8)
     return new_mask
 
-def prepare_image(image_path, is_frozen):
+def get_mag_vars(magnification):
+
+    mag_vars = {
+        'small_hole_area_threshold': 2,
+        'small_obj_min_size': 10,
+        'island_len_upper_frozen': 2000,
+        'island_len_lower_frozen': 600,
+        'island_len_formalin': 1000,
+        'island_min_size': 2,
+        'island_max_size': 1000,
+        'island_max_size_frozen_2nd_pass': 500,
+        'macro_fat_lower': 30,
+        'blur_val': 3
+    }
+
+    match magnification:
+        case '10x':
+            return {var:int(mag_vars[var]/2) for var in mag_vars}
+        case '20x':
+            return mag_vars
+        case '40x':
+            return {var:int(mag_vars[var]*2) for var in mag_vars}
+
+def prepare_image(image_path, is_frozen, mag_vars):
+
+    from PIL import Image
 
     if is_frozen:
         white_areas_in_liver_tissue = frozen_only.find_white_areas_in_liver_tissue(image_path)
@@ -128,8 +153,8 @@ def prepare_image(image_path, is_frozen):
         bool_input = sharpened_binary
 
     # Remove noise
-    opened_image_bool = remove_small_holes(bool_input, area_threshold=2) # Change black area < 5 pixels to white
-    opened_image_bool = remove_small_objects(opened_image_bool, min_size=10) # Change white area < 10 pixels to black
+    opened_image_bool = remove_small_holes(bool_input, area_threshold=mag_vars['small_hole_area_threshold']) # Change black area < #threshold pixels to white
+    opened_image_bool = remove_small_objects(opened_image_bool, min_size=mag_vars['small_obj_min_size']) # Change white area < #threshold pixels to black
     opened_image = opened_image_bool.astype(np.uint8)  # Convert to an unsigned byte
     opened_image *= 255
 

@@ -61,7 +61,7 @@ def _watershed_and_mask(save_path, ij):
 
     return islands, watershed_bool
 
-def _remove_background(opened_image_bool, is_frozen):
+def _remove_background(opened_image_bool, is_frozen, mag_vars):
     islands = common.new_graph(opened_image_bool)
 
     # Filter islands by size. Keep islands with sizes less than max_size
@@ -84,12 +84,12 @@ def _remove_background(opened_image_bool, is_frozen):
             ratio = contour_area / (math.pi * radius * radius)
 
             if is_frozen:
-                if (island_len > 2000) or (island_len > 600 and ratio < 0.3):
+                if (island_len > mag_vars['island_len_upper_frozen']) or (island_len > mag_vars['island_len_lower_frozen'] and ratio < 0.3):
                     island_to_score_map[tuple(island)] = 0
                 else:
                     island_to_score_map[tuple(island)] = 1
             else:
-                if island_len < 1000 and ratio > 0.17: # 1000 good for formalin HF-3 liver, 0.17 determined experimentally
+                if island_len < mag_vars['island_len_formalin'] and ratio > 0.17: # 1000 good for formalin HF-3 liver, 0.17 determined experimentally
                     island_to_score_map[tuple(island)] = 1 # Score of 1 means keep
                 else:
                     island_to_score_map[tuple(island)] = 0 # Score of 0 means do not keep
@@ -103,13 +103,13 @@ def _remove_background(opened_image_bool, is_frozen):
     binary_without_obvious_non_fat = binary_without_obvious_non_fat.astype(np.uint8)
     return binary_without_obvious_non_fat
 
-def segment_image(images_directory, output_directory, liver_name, image_name, is_frozen, ij):
+def segment_image(images_directory, output_directory, liver_name, image_name, is_frozen, mag_vars, ij):
     image_path = os.path.join(images_directory, liver_name, image_name)
     
-    erode_image_bool = common.prepare_image(image_path, is_frozen)
+    erode_image_bool = common.prepare_image(image_path, is_frozen, mag_vars)
 
     # Find binary image without background, save binary
-    binary_without_obvious_non_fat = _remove_background(erode_image_bool, is_frozen)
+    binary_without_obvious_non_fat = _remove_background(erode_image_bool, is_frozen, mag_vars)
     save_path = os.path.join(output_directory, liver_name, image_name)
     cv2.imwrite(save_path + '-binary.tiff', binary_without_obvious_non_fat)
     cv2.imwrite(save_path, binary_without_obvious_non_fat)
@@ -118,7 +118,7 @@ def segment_image(images_directory, output_directory, liver_name, image_name, is
     islands, np_graph = _watershed_and_mask(save_path, ij)
 
     # Create new mask, convert to overlay with green mask
-    new_mask = common.get_fat_score_for_watershed_image(islands, np_graph, circularity_threshold=0.6, min_size=2, max_size=1000) # With erosion, adjust size thresholds
+    new_mask = common.get_fat_score_for_watershed_image(islands, np_graph, circularity_threshold=0.6, min_size=mag_vars['island_min_size'], max_size=mag_vars['island_max_size']) # With erosion, adjust size thresholds
     new_mask_dilate_bool = binary_dilation(new_mask)
     
     if is_frozen:
@@ -133,7 +133,7 @@ def segment_image(images_directory, output_directory, liver_name, image_name, is
         islands_new, np_graph_new = _watershed_and_mask(save_path, ij)
         
         # Create new mask, convert to overlay with green mask
-        new_mask = common.get_fat_score_for_watershed_image(islands_new, np_graph_new, circularity_threshold=0.7, contour_area_vs_perimeter=True, min_size=2, max_size=500) # With erosion, adjust size thresholds
+        new_mask = common.get_fat_score_for_watershed_image(islands_new, np_graph_new, circularity_threshold=0.7, contour_area_vs_perimeter=True, min_size=mag_vars['island_min_size'], max_size=mag_vars['island_max_size_frozen_2nd_pass']) # With erosion, adjust size thresholds
     else:
         new_mask = new_mask_dilate_bool
 

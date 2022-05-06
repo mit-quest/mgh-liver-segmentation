@@ -6,7 +6,7 @@ images='frozen_samples'
 # the relative path to the directory to save output
 output='output'
 
-# the magnification of the images (e.g. 20x)
+# the magnification of the images ('10x', '20x', or '40x')
 mag='20x'
 
 # the biopsy preservation type ('frozen' or 'formalin')
