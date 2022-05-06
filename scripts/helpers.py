@@ -25,7 +25,7 @@ def parse_args(args: List[str]) -> Dict[str, Any]:
         "--magnification",
         type=str,
         required=True,
-        help="Magnification of images to use, e.g. 20x",
+        help="Magnification of images to use ('10x', '20x', or '40x)",
     )
     parser.add_argument(
         "--preservation",

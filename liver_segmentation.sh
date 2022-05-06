@@ -31,13 +31,13 @@ else
 	echo -e "Enter the relative path to the directory to save output: "
 	read output
 
-	echo -e "Enter the magnification of the images (e.g. 20x): "
+	echo -e "Enter the magnification of the images ('10x', '20x', or '40x'): "
 	read mag
 
 	echo -e "Enter the biopsy preservation type ('frozen' or 'formalin'): "
 	read pres
 
-	echo -e "[OPTIONAL] Enter the relative path to the CSV file with pathologist fat estimates (press 'Enter' to leave blank): "
+	echo -e "[OPTIONAL] Enter the relative path to a CSV file with pathologist fat estimates (press 'Enter' to leave blank): "
 	read estimates
 fi
 
