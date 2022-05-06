@@ -22,10 +22,10 @@ def _calculate_liver_area(image_path, mag_vars):
 
     # Apply Hough transform
     detected_circles = cv2.HoughCircles(gray_blurred,
-                       cv2.HOUGH_GRADIENT, 1, mag_vars['hough_min_dist'],
+                       cv2.HOUGH_GRADIENT, 1, 400,
                        param1 = 50, param2 = 30, 
-                       minRadius = mag_vars['hough_min_radius'], 
-                       maxRadius = mag_vars['hough_max_radius'])
+                       minRadius = 230, 
+                       maxRadius = 300)
 
     # Draw detected circles
     if detected_circles is not None:
@@ -54,7 +54,6 @@ def _calculate_large_white_area(image_path, is_frozen, mag_vars):
     erode_image_bool = common.prepare_image(image_path, is_frozen, mag_vars)
 
     islands = common.new_graph(erode_image_bool)
-
     num_large_white_area_pixels = 0
     large_white_area_array = np.zeros((image.shape[0], image.shape[1]))
     for island in islands:

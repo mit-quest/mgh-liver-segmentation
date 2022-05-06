@@ -1,7 +1,7 @@
 # Configuration for liver segmentation
 
 # the relative path to the directory with liver biopsy images
-images='frozen_samples'
+images='tester'
 
 # the relative path to the directory to save output
 output='output'

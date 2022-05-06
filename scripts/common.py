@@ -127,10 +127,7 @@ def get_mag_vars(magnification):
         'island_max_size': 1000,
         'island_max_size_frozen_2nd_pass': 500,
         'macro_fat_lower': 30,
-        'blur_val': 3,
-        'hough_min_dist': 400,
-        'hough_min_radius': 230,
-        'hough_max_radius': 300
+        'blur_val': 3
     }
 
     match magnification:
@@ -142,6 +139,8 @@ def get_mag_vars(magnification):
             return {var:int(mag_vars[var]*2) for var in mag_vars}
 
 def prepare_image(image_path, is_frozen, mag_vars):
+
+    from PIL import Image
 
     if is_frozen:
         white_areas_in_liver_tissue = frozen_only.find_white_areas_in_liver_tissue(image_path)
