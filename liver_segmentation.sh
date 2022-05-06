@@ -37,7 +37,7 @@ else
 	echo -e "Enter the biopsy preservation type ('frozen' or 'formalin'): "
 	read pres
 
-	echo -e "[OPTIONAL] Enter the relative path to a CSV file with pathologist fat estimates (press 'Enter' to leave blank): "
+	echo -e "[OPTIONAL] Enter the relative path to a CSV file with pathologist fat estimates for comparison (press 'Enter' to leave blank): "
 	read estimates
 fi
 

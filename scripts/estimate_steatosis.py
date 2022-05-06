@@ -22,10 +22,8 @@ def _calculate_liver_area(image_path, mag_vars):
 
     # Apply Hough transform
     detected_circles = cv2.HoughCircles(gray_blurred,
-                       cv2.HOUGH_GRADIENT, 1, 400,
-                       param1 = 50, param2 = 30, 
-                       minRadius = 230, 
-                       maxRadius = 300)
+                       cv2.HOUGH_GRADIENT, 1, 400, param1 = 50, 
+                       param2 = 30, minRadius = 230, maxRadius = 300)
 
     # Draw detected circles
     if detected_circles is not None:
