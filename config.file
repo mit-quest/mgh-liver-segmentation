@@ -1,10 +1,12 @@
 # Configuration for liver segmentation
 
 # the relative path to the directory with liver biopsy images
-images='frozen_samples'
+# images='frozen_samples'
+# images='/Users/kvfairchild/Dropbox (MIT)/MGH-unet-sandbox/MGH clinical_resized'
 
 # the relative path to the directory to save output
-output='output'
+# output='output'
+output='/Users/kvfairchild/Dropbox (MIT)/MGH-unet-sandbox/MGH clinical_resized_output'
 
 # the magnification of the images ('10x', '20x', or '40x')
 mag='20x'
@@ -14,3 +16,6 @@ pres='frozen'
 
 # [OPTIONAL] the relative path to a CSV file with pathologist fat estimates for comparison
 estimates=''
+
+# [OPTIONAL] new dimensions as 'width'x'height' (e.g. '480x640') to resize images
+dims=''

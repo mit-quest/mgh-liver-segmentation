@@ -19,10 +19,9 @@ from scipy import ndimage as ndi
 from scipy.spatial import distance
 
 import os
+import subprocess
 import sys
 sys.setrecursionlimit(10000000)
-
-import imagej
 
 import common
 import frozen_only

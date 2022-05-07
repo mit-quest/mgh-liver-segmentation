@@ -1,3 +1,4 @@
+import glob
 import numpy as np
 from PIL import Image
 import os
@@ -5,20 +6,7 @@ from typing import List, Dict, Any
 import sys
 import argparse
 
-
-def resize_images(images_directory, new_width, new_height, output_directory):
-    """
-    Resize images before segmenting and calculating fat estimates for images
-    """
-    image_names = os.listdir(images_directory)
-    for image_name in image_names:
-        image_path = os.path.join(images_directory, image_name)
-        image = Image.open(image_path)
-
-        if image.size != (new_width, new_height):
-            new_image = image.resize((new_width, new_height))
-            save_path = os.path.join(output_directory, image_name)
-            new_image.save(save_path, "tiff")
+import helpers
 
 
 def parse_args(args: List[str]) -> Dict[str, Any]:
@@ -50,6 +38,31 @@ def parse_args(args: List[str]) -> Dict[str, Any]:
     args = vars(parser.parse_args())
     return args
 
+def resize_images(images_directory, new_width, new_height, output_directory):
+    """
+    Resize images before segmenting and calculating fat estimates for images
+    """
+    # create output dirs
+    image_dir_fps = [fp for fp in glob.glob(images_directory + "/**/**", recursive=True) 
+                    if os.path.isdir(fp)]
+
+    image_file_fps = [fp for fp in glob.glob(images_directory + "/**/**", recursive=True) 
+                    if os.path.isfile(fp)]
+
+    for fp in image_dir_fps:
+        new_dir_fp = fp.replace(images_directory, output_directory) 
+        if not os.path.exists(new_dir_fp):
+            os.mkdir(new_dir_fp)
+
+    # resize images
+    for fp in image_file_fps:
+        image = Image.open(fp)
+        if image.size != (new_width, new_height):
+            new_image = image.resize((new_width, new_height))
+        else:
+            new_image = image
+        save_path = fp.replace(images_directory, output_directory)
+        new_image.save(save_path, "tiff")
 
 def main(**args: Dict[str, Any]) -> None:
     images_directory, output_directory, new_width, new_height = args.values()
