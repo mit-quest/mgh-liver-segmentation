@@ -4,9 +4,6 @@ from multiprocessing import Pool, cpu_count
 from typing import List, Dict, Any
 import time
 
-import logging
-logging.basicConfig(filename='runner.log', encoding='utf-8', level=logging.ERROR)
-
 import os
 import sys
 sys.setrecursionlimit(10000000)
@@ -74,11 +71,17 @@ def main(**args: Dict[str, Any]) -> None:
                     os.remove(csv_file_path)
 
                 # Init parallel processing for segmentation & fat estimation
-                n_procs = cpu_count()-1 if len(liver_images) >= cpu_count() else len(liver_images)
-                pool = Pool(processes=n_procs)
-                input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen, magnification] for image_name in liver_images]
-                pool.starmap(_process_image, input_list) 
-                pool.close()
+                n = 4 # num images to process simultaneously, too many will invoke JVM error
+                n_procs = cpu_count()-1 if n >= cpu_count() else n
+
+                i = 0
+                while i < len(liver_images):
+                    liver_slice = [liver_images[j] for j in range(i, n+i) if j < len(liver_images)]
+                    pool = Pool(processes=n_procs)
+                    input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen, magnification] for image_name in liver_slice]
+                    pool.starmap(_process_image, input_list) 
+                    pool.close()
+                    i += n
 
                 print(liver_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
