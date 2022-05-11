@@ -19,7 +19,6 @@ from scipy import ndimage as ndi
 from scipy.spatial import distance
 
 import os
-import subprocess
 import sys
 sys.setrecursionlimit(10000000)
 
@@ -42,6 +41,7 @@ def _run_watershed(binary_image_path, watershed_image_path, ij):
         'binary_image_path': binary_image_path,
         'watershed_image_path': watershed_image_path + '-w2.tiff',
     };
+
     result = ij.py.run_macro(macro, args);
     result.getOutput('watershed_image_path')
 
@@ -82,6 +82,7 @@ def _remove_background(opened_image_bool, is_frozen, mag_vars):
             center, radius = cv2.minEnclosingCircle(contour)
             ratio = contour_area / (math.pi * radius * radius)
 
+            # Score of 1 means keep / # Score of 0 means do not keep
             if is_frozen:
                 if (island_len > mag_vars['island_len_upper_frozen']) or (island_len > mag_vars['island_len_lower_frozen'] and ratio < 0.3):
                     island_to_score_map[tuple(island)] = 0
@@ -89,9 +90,9 @@ def _remove_background(opened_image_bool, is_frozen, mag_vars):
                     island_to_score_map[tuple(island)] = 1
             else:
                 if island_len < mag_vars['island_len_formalin'] and ratio > 0.17: # 1000 good for formalin HF-3 liver, 0.17 determined experimentally
-                    island_to_score_map[tuple(island)] = 1 # Score of 1 means keep
+                    island_to_score_map[tuple(island)] = 1
                 else:
-                    island_to_score_map[tuple(island)] = 0 # Score of 0 means do not keep
+                    island_to_score_map[tuple(island)] = 0
 
     # Create binary image without obvious non-fat. Color black non-fat islands
     binary_without_obvious_non_fat = np.zeros(opened_image_bool.shape)

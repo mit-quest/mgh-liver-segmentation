@@ -6,7 +6,7 @@ images='/Users/kvfairchild/Desktop/cherrypick/originals'
 
 # the relative path to the directory to save output
 # output='output'
-output='/Users/kvfairchild/Desktop/cherrypick/output'
+output='/Users/kvfairchild/Desktop/cherrypick/output_nolowerbound'
 
 # the magnification of the images ('10x', '20x', or '40x')
 mag='20x'
