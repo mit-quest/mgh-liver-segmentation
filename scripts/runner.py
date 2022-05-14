@@ -13,13 +13,13 @@ import imagej
 import common
 import helpers
 from segment_image import segment_image
-from estimate_steatosis import estimate_steatosis
+from estimate_steatosis import estimate_steatosis 
 
 
 def _process_image(images_directory, output_directory, liver_name, image_name, is_frozen, magnification): 
     start_time = time.monotonic()
 
-    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy', mode='headless') 
+    ij = imagej.init('net.imagej:imagej+net.imagej:imagej-legacy', mode='headless')
 
     mag_vars = common.get_mag_vars(magnification)
 
@@ -36,18 +36,16 @@ def _process_image(images_directory, output_directory, liver_name, image_name, i
 
     print(image_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
-
 def main(**args: Dict[str, Any]) -> None:
     images_directory, output_directory, magnification, preservation, pathologist_estimates = args.values()
     is_frozen = True if preservation == 'frozen' else False
-    liver_folders = os.listdir(images_directory)
 
     # Create output folder if it does not already exist
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
 
+    liver_folders = os.listdir(images_directory)
     for liver_name in liver_folders:
-
         print("\n\nProcessing " + liver_name)
         start_time = time.monotonic()
 
@@ -72,11 +70,15 @@ def main(**args: Dict[str, Any]) -> None:
                 os.remove(csv_file_path)
 
             # Init parallel processing for segmentation & fat estimation
-            n_procs = cpu_count() if len(liver_images) >= cpu_count() else len(liver_images)
-            pool = Pool(processes=n_procs)
-            input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen, magnification] for image_name in liver_images]
-            pool.starmap(_process_image, input_list) 
-            pool.close()
+            n_procs = cpu_count()-1
+            i = 0
+            while i < len(liver_images):
+                liver_slice = [liver_images[j] for j in range(i, n_procs+i) if j < len(liver_images)]
+                pool = Pool(processes=n_procs)
+                input_list = [[images_directory, output_directory, liver_name, image_name, is_frozen, magnification] for image_name in liver_slice]
+                pool.starmap(_process_image, input_list) 
+                pool.close()
+                i += n_procs
 
             print(liver_name + " complete! Time taken: " + str(timedelta(seconds=time.monotonic() - start_time)))
 
@@ -87,9 +89,9 @@ def main(**args: Dict[str, Any]) -> None:
                 helpers.make_powerpoint(images_directory, output_directory,
                                 pathologist_estimates, liver_name, powerpoint_save_path)
         else:
-            print(liver_folder_path + " is not a directory. Skipping.")            
+           print(liver_folder_path + " is not a directory. Skipping.")   
+
 
 if __name__ == "__main__":
     kwargs = helpers.parse_args(sys.argv[1:])
     main(**kwargs)
-    sys.exit(0) # force exit else JVM hangs (known imageJ issue)

@@ -12,9 +12,9 @@ from statistics import median
 import common
 
 
-def _calculate_liver_area(image_path, mag_vars):
+def _calculate_black_background(image_path, mag_vars):
     """
-    Calculate the number of pixels corresponding to liver tissue
+    Calculate the number of pixels corresponding to black image area
     """
     src = cv2.imread(image_path)
     gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
@@ -81,7 +81,7 @@ def _count_fat_macro_micro(image, mask, image_path, is_frozen, mag_vars):
     image_inv = copy.deepcopy(image)
 
     # Find area of black background in original image
-    num_black_border_pixels, _ = _calculate_liver_area(image_path, mag_vars)
+    num_black_border_pixels, _ = _calculate_black_background(image_path, mag_vars)
 
     # Find area of large white islands
     num_white_island_pixels, _ = _calculate_large_white_area(image_path, is_frozen, mag_vars)
@@ -194,7 +194,7 @@ def estimate_steatosis(images_directory, output_directory, liver_name, image_nam
         writer.writerow([image_name, mean_total_fat, mean_macro_fat])
 
     _, large_white_area_array = _calculate_large_white_area(image_path, is_frozen, mag_vars)
-    _, black_background_area_array = _calculate_liver_area(image_path, mag_vars)
+    _, black_background_area_array = _calculate_black_background(image_path, mag_vars)
     combined_non_liver_array = np.maximum(large_white_area_array, black_background_area_array)
     combined_non_liver_array = 255 - combined_non_liver_array
     combined_non_liver_image = Image.fromarray(np.uint8(combined_non_liver_array) , 'L')

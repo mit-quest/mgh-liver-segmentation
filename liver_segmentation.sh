@@ -39,12 +39,22 @@ else
 
 	echo -e "[OPTIONAL] Enter the relative path to a CSV file with pathologist fat estimates for comparison (press 'Enter' to leave blank): "
 	read estimates
+
+	echo -e "[OPTIONAL] Enter new dimensions as 'width'x'height' (e.g. '480x640') to resize images (press 'Enter' to leave blank): "
+	read dims
 fi
 
 if [ -z "$estimates" ]
 then
 	estimates='False'
 fi
+if [ "$dims" ]
+then
+	# Run Python image resizing script
+	resized_image_dir=$images'_resized'
+	python3 "scripts/resize_images.py" --images_directory $images --output_directory $resized_image_dir --new_width ${dims%x*} --new_height ${dims#*x}
+	images=$resized_image_dir
+fi
 
-# Run Python script
+# Run Python segmentation & estimation script
 python3 "scripts/runner.py" --images_directory $images --output_directory $output --pathologist_estimates $estimates --magnification $mag --preservation $pres

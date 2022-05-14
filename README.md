@@ -68,7 +68,7 @@ HF-2,0,10
 HF-3,40,25
 ```
 
-* The magnification of the images to use should be written as `20x` and should match the magnification written in the image names. Although `10x` magnification is supported, for best results, either `20x` or `40x` should be used.
+* The magnification of the images to use should be written as `20x` and should match the magnification written in the image names. Although `10x` magnification is supported, **for best results, either `20x` or `40x` should be used**.
 
 The following is an example response to the prompts above.
 

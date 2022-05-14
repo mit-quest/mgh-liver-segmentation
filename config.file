@@ -14,3 +14,6 @@ pres='frozen'
 
 # [OPTIONAL] the relative path to a CSV file with pathologist fat estimates for comparison
 estimates=''
+
+# [OPTIONAL] new dimensions as 'width'x'height' (e.g. '480x640') to resize images
+dims=''
