@@ -1,12 +1,10 @@
 # Configuration for liver segmentation
 
 # the relative path to the directory with liver biopsy images
-# images='frozen_samples'
-images='/Users/kvfairchild/Desktop/cherrypick/originals'
+images='frozen_samples'
 
 # the relative path to the directory to save output
-# output='output'
-output='/Users/kvfairchild/Desktop/cherrypick/output_nolowerbound'
+output='output'
 
 # the magnification of the images ('10x', '20x', or '40x')
 mag='20x'
