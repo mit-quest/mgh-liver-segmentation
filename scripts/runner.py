@@ -90,6 +90,10 @@ def main(**args: Dict[str, Any]) -> None:
                                                     f'{liver_name}_slides.pptx')
                 helpers.make_powerpoint(images_directory, output_directory,
                                 pathologist_estimates, liver_name, powerpoint_save_path)
+            # if not creating slides, just add liver fat estimate directly into csv
+            else:
+                helpers.calculate_liver_fat(csv_file_path)
+
         else:
            print(liver_folder_path + " is not a directory. Skipping.")   
 

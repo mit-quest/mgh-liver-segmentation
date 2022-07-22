@@ -1,7 +1,9 @@
 import argparse
+import csv
 from typing import List, Dict, Any
 import os
 import pandas as pd
+import scipy.stats as stats
 
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -42,6 +44,30 @@ def parse_args(args: List[str]) -> Dict[str, Any]:
     args = vars(parser.parse_args())
     return args
 
+def calculate_liver_fat(fat_estimates_path):
+
+    df = pd.read_csv(fat_estimates_path, header=None)
+    num_rows = len(df.index)
+    liver_sum_estimates = []
+    for index, row in df.iterrows():
+        total_fat = row[1]
+        liver_sum_estimates.append(float(total_fat))
+
+    # drop image estimates if > 1 SD
+    zscore_arr = stats.zscore(liver_sum_estimates, axis=0)
+    for i, e in enumerate(liver_sum_estimates):
+        if zscore_arr[i] >= 2:
+            print("dropping " + str(e))
+    new_liver_sum_estimates = [e for i, e in enumerate(liver_sum_estimates) if zscore_arr[i] <= 2]
+
+    liver_overall_mean_estimate = sum(new_liver_sum_estimates) / len(new_liver_sum_estimates)
+
+    with open(fat_estimates_path, 'a') as f:
+        writer = csv.writer(f)
+        f.write("\n")
+        writer.writerow(['Total liver mean fat estimate', round(liver_overall_mean_estimate, 2)])
+
+    return liver_overall_mean_estimate
 
 # TODO: Center title and pathologist/algorithm estimates
 def make_powerpoint(images_directory, output_directory, pathologist_estimates, liver_name, powerpoint_save_path):
@@ -88,16 +114,8 @@ def make_powerpoint(images_directory, output_directory, pathologist_estimates, l
     liver_files = os.listdir(liver_folder_path)
     fat_estimates_path = os.path.join(liver_folder_path, f'{liver_name}_fat_estimates.csv')
 
-    # Find overall fat estimate for liver
-    df = pd.read_csv(fat_estimates_path, header=None)
-    num_rows = len(df.index)
-    liver_sum_estimates = 0
-    liver_num_estimates = 0
-    for index, row in df.iterrows():
-        total_fat = row[1]
-        liver_sum_estimates += float(total_fat)
-        liver_num_estimates += 1
-    liver_overall_estimate = liver_sum_estimates / liver_num_estimates
+    # Find overall fat estimate for liver & write it to csv
+    liver_overall_estimate = calculate_liver_fat()
 
     # Get pathologist estimates for liver
     pathologist_estimates_df = pd.read_csv(pathologist_estimates)
