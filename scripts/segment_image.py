@@ -145,3 +145,9 @@ def segment_image(images_directory, output_directory, liver_name, image_name, is
     new_mask_to_save = new_mask_rgb.astype(np.uint8) * 255
     cv2.imwrite(save_path + '-new_mask.tiff', new_mask_to_save)
     cv2.imwrite(save_path, new_mask_to_save)
+
+    # Cleanup
+    os.remove(save_path + "-binary.tiff")
+    os.remove(save_path + "-watershed.tiff")
+    os.remove(save_path + "-w2.tiff")
+    os.remove(save_path + "-new_mask.tiff")
