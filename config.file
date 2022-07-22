@@ -4,7 +4,7 @@
 images='frozen_samples'
 
 # the relative path to the directory to save output
-output='output'
+output='output_w_new_param'
 
 # the magnification of the images ('10x', '20x', or '40x')
 mag='20x'
