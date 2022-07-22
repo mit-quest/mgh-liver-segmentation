@@ -15,6 +15,8 @@ import helpers
 from segment_image import segment_image
 from estimate_steatosis import estimate_steatosis 
 
+import warnings
+warnings.filterwarnings("ignore", message="Any labeled images will be returned as a boolean array. Did you mean to use a boolean array?")
 
 def _process_image(images_directory, output_directory, liver_name, image_name, is_frozen, magnification): 
     start_time = time.monotonic()
